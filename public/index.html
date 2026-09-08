@@ -41,8 +41,8 @@
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
         const formData = new FormData();
-        formData.append('audio', audioBlob);
         formData.append('textId', currentSentence.id);
+        formData.append('audio', audioBlob);
 
         document.getElementById('status').innerText = "Uploading audio...";
         await fetch('/api/upload', { method: 'POST', body: formData });
