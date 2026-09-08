@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, 'uploads/'),
   filename: (req, file, cb) => {
     const textId = req.body.textId || 'unknown';
-    cb(null, `mizo_sentence_${textId}_${Date.now()}.wav`);
+    cb(null, mizo_sentence_${req.body.textId || 'unknown'}_${Date.now()}.wav);
   }
 });
 
