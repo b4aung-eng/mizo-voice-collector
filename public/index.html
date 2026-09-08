@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mizo Voice Collector</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; padding: 2rem; background: #f0f2f5; }
+    .card { background: white; max-width: 400px; margin: auto; padding: 2rem; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    button { font-size: 1rem; padding: 12px 20px; margin: 8px; border: none; border-radius: 5px; cursor: pointer; }
+    .rec { background: #e74c3c; color: white; }
+    .stop { background: #2ecc71; color: white; }
+    .sentence { font-size: 1.3rem; font-weight: bold; margin: 20px 0; color: #333; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Mizo Voice Collector</h2>
+    <p>Read this Mizo sentence clearly:</p>
+    <div id="sentenceDisplay" class="sentence">Loading...</div>
+    <button id="recBtn" class="rec">Start Recording</button>
+    <button id="stopBtn" class="stop" disabled>Stop & Save</button>
+    <p id="status"></p>
+  </div>
+
+  <script>
+    let mediaRecorder, audioChunks = [], currentSentence = {};
+
+    async function loadSentence() {
+      const res = await fetch('/api/sentence');
+      currentSentence = await res.json();
+      document.getElementById('sentenceDisplay').innerText = `"${currentSentence.text}"`;
+      document.getElementById('status').innerText = "";
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+      mediaRecorder = new MediaRecorder(stream);
+      
+      mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+      
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+        formData.append('textId', currentSentence.id);
+
+        document.getElementById('status').innerText = "Uploading audio...";
+        await fetch('/api/upload', { method: 'POST', body: formData });
+        document.getElementById('status').innerText = "Saved! Loading next sentence...";
+        audioChunks = [];
+        setTimeout(loadSentence, 1500);
+      };
+    });
+
+    document.getElementById('recBtn').onclick = () => {
+      audioChunks = [];
+      mediaRecorder.start();
+      document.getElementById('recBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = false;
+      document.getElementById('status').innerText = "Recording active...";
+    };
+
+    document.getElementById('stopBtn').onclick = () => {
+      mediaRecorder.stop();
+      document.getElementById('recBtn').disabled = false;
+      document.getElementById('stopBtn').disabled = true;
+    };
+
+    loadSentence();
+  </script>
+</body>
+</html>
